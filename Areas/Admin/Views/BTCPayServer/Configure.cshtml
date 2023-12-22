@@ -1,0 +1,133 @@
+﻿@{
+    Layout = "_ConfigurePlugin";
+}
+
+@model ConfigurationModel
+@using Payments.BTCPayServer.Models;
+@await Component.InvokeAsync("StoreScope")
+
+<form asp-area="Admin" asp-controller="BTCPayServer" asp-action="Configure" method="post">
+    <div class="cards-group">
+        <div class="card card-default">
+            <div class="card-body">
+                @if (!Model.IsConfigured())
+                {
+                    <p>@Html.Raw(@Loc["Plugins.Payments.BTCPayServer.Instructions"])</p>
+
+                    @if (string.IsNullOrEmpty(Model.WebHookSecret))
+                    {
+                        <br />
+                        <p>
+                            @Loc["Plugins.Payments.BTCPayServer.WebHookInfo"] &nbsp; @ViewBag.UrlWebHook<br />
+                        </p>
+                    }
+
+                }
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <admin-label asp-for="BtcPayUrl" class="control-label" />
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="BtcPayUrl" />
+                        <span asp-validation-for="BtcPayUrl"></span>
+                        @if (!Model.IsConfigured())
+                        {
+                           <button type="submit" name="command" value="getautomaticapikeyconfig" class="btn btn-outline-primary btn-sm" style="margin-bottom: 0.25rem">Configure automatically</button>
+                        }
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <admin-label asp-for="ApiKey" class="control-label" />
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="ApiKey" />
+                        <span asp-validation-for="ApiKey"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <admin-label asp-for="BtcPayStoreID" class="control-label" />
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="BtcPayStoreID" />
+                        <span asp-validation-for="BtcPayStoreID"></span>
+                    </div>
+                </div>
+
+
+                <br />
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <label>@Loc["Plugins.Payments.BTCPayServer.WebHookUrl"]</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input value="@ViewBag.UrlWebHook" readonly />
+                        <button class="btn btn-outline-secondary" title="Copy" onclick="navigator.clipboard.writeText('@ViewBag.UrlWebHook')">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <admin-label asp-for="WebHookSecret" class="control-label" />
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="WebHookSecret" />
+                        <span asp-validation-for="WebHookSecret"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <label>@Loc["Plugins.Payments.BTCPayServer.AdditionalFee"]</label>
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="AdditionalFee" />
+                        <span asp-validation-for="AdditionalFee"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <label>@Loc["Plugins.Payments.BTCPayServer.AdditionalFeePercentage"]</label>
+                    </div>
+                    <div class="col-md-9">
+                        <admin-input asp-for="AdditionalFeePercentage" />
+                        <span asp-validation-for="AdditionalFeePercentage"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-9 offset-md-3">
+                        <button type="submit" name="save" class="btn green">@Loc["Admin.Common.Save"]</button>
+                    </div>
+                </div>
+
+
+                @if (Model.IsConfigured())
+                {
+                    <div class="form-group row">
+                        <div class="col-md-9 offset-md-3">
+                            <button id="DeleteConfigButton" name="command" type="submit" class="btn btn-danger" value="delete">
+                                <i class="fa fa-trash"></i>
+                                <span>@Loc["Admin.Common.Clear"]</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.IsConfigured())
+                {
+                    <widget target-zone="admin_button_toolbar_before">
+                        <button id="ActivateMethodButton" name="command" type="submit" class="btn btn-primary" value="activate">
+                            <span>Activate</span>
+                        </button>
+                    </widget>
+                }
+
+
+            </div>
+        </div>
+    </div>
+</form>

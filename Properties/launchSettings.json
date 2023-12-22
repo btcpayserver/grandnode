@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Payments.BtcPay": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:55847;http://localhost:55848"
+    }
+  }
+}

@@ -201,14 +201,16 @@ namespace Payments.BTCPayServer.Controllers
             var myStore = _workContext.CurrentStore;
 
             Request.Query.TryGetValue("ssid", out var ssidx);
-            var ssid = ssidx.FirstOrDefault() ?? myStore.Id;
+            var ssid = ssidx.FirstOrDefault(); // ?? myStore.Id;
             if (ssid != myStore.Id)
             {
+                await _logger.InsertLog(LogLevel.Error, "GetAutomaticApiKeyConfig(): NotFound");
                 return NotFound();
             }
 
-            var storeScope = await GetActiveStore();
-            var settings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
+            //var storeScope = await GetActiveStore();
+            //var settings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
+            var settings = _settingService.LoadSetting<BtcPaySettings>(myStore.Id);
 
             try
             {
@@ -237,14 +239,16 @@ namespace Payments.BTCPayServer.Controllers
                         settings.WebHookSecret = await _btcPayService.CreateWebHook(settings, webhookUrl.ToString());
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    await _logger.InsertLog(LogLevel.Error, "1- " + ex.Message);
                 }
 
                 _paymentSettings.ActivePaymentProviderSystemNames.Add("Payments.BTCPayServer");
 
                 await _settingService.SaveSetting<PaymentSettings>(_paymentSettings);
-                await _settingService.SaveSetting<BtcPaySettings>(settings);
+                await _settingService.SaveSetting<BtcPaySettings>(settings, myStore.Id);
+                await _settingService.ClearCache();
 
                 Success("Settings automatically configured and payment method activated.");
 
@@ -252,7 +256,7 @@ namespace Payments.BTCPayServer.Controllers
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, ex.Message);
+                await _logger.InsertLog(LogLevel.Error, "2- " + ex.Message);
 
             }
             return RedirectToAction(nameof(Configure));

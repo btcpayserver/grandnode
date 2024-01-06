@@ -1,5 +1,6 @@
 ﻿using BTCPayServer.Client.Models;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
+using Grand.Business.Core.Interfaces.Checkout.Payments;
 using Grand.Business.Core.Interfaces.Common.Configuration;
 using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Domain.Logging;
@@ -22,12 +23,13 @@ namespace BTCPayServer.Controllers
         public PaymentBTCPayServerController(IOrderService orderService,
             ISettingService settingService,
             ILogger logger,
+            IPaymentTransactionService paymentTransactionService,
             IHttpClientFactory httpClientFactory)
         {
             _settingService = settingService;
             _orderService = orderService;
             _logger = logger;
-            _btcPayService = new BtcPayService(orderService, httpClientFactory);
+            _btcPayService = new BtcPayService(orderService, paymentTransactionService, logger, httpClientFactory);
         }
 
 

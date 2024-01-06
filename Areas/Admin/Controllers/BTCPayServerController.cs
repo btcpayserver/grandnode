@@ -64,7 +64,7 @@ namespace Payments.BTCPayServer.Controllers
             _paymentSettings = settings;
             _logger = logger;
 
-            _btcPayService = new BtcPayService(orderService, httpClientFactory);
+            _btcPayService = new BtcPayService(orderService, null, logger, httpClientFactory);
 
         }
 

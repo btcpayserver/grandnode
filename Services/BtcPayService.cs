@@ -1,7 +1,11 @@
 ﻿using BTCPayServer.Client;
 using BTCPayServer.Client.Models;
+using Grand.Business.Checkout.Services.Payments;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
+using Grand.Business.Core.Interfaces.Checkout.Payments;
+using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Business.Core.Utilities.Checkout;
+using Grand.Domain.Logging;
 using Grand.Domain.Orders;
 using Grand.Domain.Payments;
 using Newtonsoft.Json.Linq;
@@ -15,11 +19,18 @@ namespace Payments.BTCPayServer.Services
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IOrderService _orderService;
+        private readonly IPaymentTransactionService? _paymentTransactionService;
+        private readonly ILogger _logger;
 
-        public BtcPayService(IOrderService orderService, IHttpClientFactory httpClientFactory)
+        public BtcPayService(IOrderService orderService,
+            IPaymentTransactionService? paymentTransactionService,
+            ILogger logger,
+            IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
             _orderService = orderService;
+            _logger = logger;
+            _paymentTransactionService = paymentTransactionService;
         }
 
         public static bool CheckSecretKey(string key, string message, string signature)
@@ -162,6 +173,22 @@ namespace Payments.BTCPayServer.Services
             {
                 order.OrderStatusId = newOrderStatus;
                 updated = true;
+            }
+
+            if (newPaymentStatus == PaymentStatus.Paid)
+            {
+                try
+                {
+                    var paymentTransaction = await _paymentTransactionService.GetOrderByGuid(order.OrderGuid);
+                    paymentTransaction.PaidAmount = order.PaidAmount;
+                    paymentTransaction.AuthorizationTransactionId = invoiceData.Id;
+                    paymentTransaction.TransactionStatus = Grand.Domain.Payments.TransactionStatus.Paid;
+                    await _paymentTransactionService.UpdatePaymentTransaction(paymentTransaction);
+                }
+                catch (Exception ex)
+                {
+                    await _logger.InsertLog(LogLevel.Error, "UpdateOrderWithInvoice() - paymentTransaction: " + ex.Message);
+                }
             }
 
             var additionalMessage = GetAdditionalMessageFromWebhook(webhookEvent);

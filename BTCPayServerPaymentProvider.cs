@@ -57,7 +57,7 @@ namespace Payments.BTCPayServer
             _orderService = orderService;
             _logger = logger;
 
-            _btcPayService = new BtcPayService(_orderService, httpClientFactory);
+            _btcPayService = new BtcPayService(_orderService, null, logger, httpClientFactory);
         }
 
         public PaymentMethodType PaymentMethodType => PaymentMethodType.Redirection;
@@ -177,6 +177,7 @@ namespace Payments.BTCPayServer
         public async Task PostRedirectPayment(PaymentTransaction paymentTransaction)
         {
             // implement process payment
+            Order? order = null;
             try
             {
 
@@ -202,7 +203,7 @@ namespace Payments.BTCPayServer
                                 new { id = paymentTransaction.OrderGuid })).ToString()
                 });
                 
-                var order = await _orderService.GetOrderByGuid(paymentTransaction.OrderGuid);
+                order = await _orderService.GetOrderByGuid(paymentTransaction.OrderGuid);
                 order.OrderTags.Add($"AuthorizationTransactionResult#{invoice.CheckoutLink}");
                 order.OrderTags.Add($"AuthorizationTransactionId#{invoice.Id}");
                 order.OrderTags.Add($"CaptureTransactionResult#{(invoice.Receipt?.Enabled is true ? invoice.CheckoutLink + "/receipt" : null)}");
@@ -215,6 +216,17 @@ namespace Payments.BTCPayServer
             catch (Exception ex)
             {
                 await _logger.InsertLog(LogLevel.Error, ex.Message);
+                if (order == null)
+                {
+                    order = await _orderService.GetOrderByGuid(paymentTransaction.OrderGuid);
+                }
+                await _orderService.InsertOrderNote(new OrderNote {
+                    OrderId = order.Id,
+                    Note = $"Error creating BTCPay payment.",
+                    DisplayToCustomer = true,
+                    CreatedOnUtc = DateTime.UtcNow
+                });
+
             }
 
         }

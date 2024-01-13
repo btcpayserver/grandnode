@@ -23,7 +23,6 @@ using System.Web;
 
 namespace Payments.BTCPayServer.Controllers
 {
-    [AuthorizeAdmin]
     [Area("Admin")]
     [PermissionAuthorize(PermissionSystemName.PaymentMethods)]
     public class BTCPayServerController : BasePaymentController
@@ -84,6 +83,7 @@ namespace Payments.BTCPayServer.Controllers
             return store != null ? store.Id : "";
         }
 
+        [AuthorizeAdmin]
         public async Task<IActionResult> Configure()
         {
             if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
@@ -110,7 +110,7 @@ namespace Payments.BTCPayServer.Controllers
             return View(model);
         }
 
-        [HttpPost]
+        [HttpPost, AuthorizeAdmin]
         public async Task<IActionResult> Configure(ConfigurationModel model, string command = null)
         {
             if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))

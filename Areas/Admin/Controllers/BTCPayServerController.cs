@@ -24,6 +24,7 @@ using System.Web;
 namespace Payments.BTCPayServer.Controllers
 {
     [Area("Admin")]
+    [AuthorizeAdmin]
     [PermissionAuthorize(PermissionSystemName.PaymentMethods)]
     public class BTCPayServerController : BasePaymentController
     {
@@ -83,7 +84,6 @@ namespace Payments.BTCPayServer.Controllers
             return store != null ? store.Id : "";
         }
 
-        [AuthorizeAdmin]
         public async Task<IActionResult> Configure()
         {
             if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
@@ -93,8 +93,7 @@ namespace Payments.BTCPayServer.Controllers
             var storeScope = await GetActiveStore();
             var btcPaySettings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
 
-            var model = new ConfigurationModel
-            {
+            var model = new ConfigurationModel {
                 BtcPayUrl = btcPaySettings.BtcPayUrl.IfNullOrWhiteSpace(""),
                 ApiKey = btcPaySettings.ApiKey.IfNullOrWhiteSpace(""),
                 BtcPayStoreID = btcPaySettings.BtcPayStoreID.IfNullOrWhiteSpace(""),
@@ -104,13 +103,14 @@ namespace Payments.BTCPayServer.Controllers
                 StoreScope = storeScope
             };
 
-            ViewBag.UrlWebHook = new Uri(new Uri(_storeService.GetStoreById(storeScope).Result.Url),
-                _linkGenerator.GetPathByAction("Process", "PaymentBTCPayServer"));
+            /*           ViewBag.UrlWebHook = new Uri(new Uri(_storeService.GetStoreById(storeScope).Result.Url),
+                           _linkGenerator.GetPathByAction("Process", "PaymentBTCPayServer"));*/
+            ViewBag.UrlWebHook = new Uri(_storeService.GetStoreById(storeScope).Result.Url + "PaymentBTCPayServer/Process");
 
             return View(model);
         }
 
-        [HttpPost, AuthorizeAdmin]
+        [HttpPost]
         public async Task<IActionResult> Configure(ConfigurationModel model, string command = null)
         {
             if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
@@ -234,8 +234,9 @@ namespace Payments.BTCPayServer.Controllers
 
                     if (string.IsNullOrEmpty(settings.WebHookSecret))
                     {
-                        var webhookUrl = new Uri(new Uri(myStore.Url),
-                            _linkGenerator.GetPathByAction("Process", "WebHookBtcPay"));
+                        var webhookUrl = new Uri(myStore.Url + "PaymentBTCPayServer/Process");
+                        /*new Uri(new Uri(myStore.Url),
+                            _linkGenerator.GetPathByAction("Process", "PaymentBTCPayServer"));*/
                         settings.WebHookSecret = await _btcPayService.CreateWebHook(settings, webhookUrl.ToString());
                     }
                 }
@@ -272,7 +273,9 @@ namespace Payments.BTCPayServer.Controllers
             }
 
             var myStore = _workContext.CurrentStore;
-            var adminUrl = new Uri(new Uri(myStore.Url),
+
+            //var adminUrl = new Uri(new Uri(myStore.Url),
+            var adminUrl = new Uri(new Uri((Request.IsHttps ? "https://" : "http://") + Request.Host.Value),
                 _linkGenerator.GetPathByAction(HttpContext, "GetAutomaticApiKeyConfig", "BTCPayServer",
                     new { ssid = myStore.Id, btcpayuri = btcpayUri }));
             var uri = BTCPayServerClient.GenerateAuthorizeUri(btcpayUri,

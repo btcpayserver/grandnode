@@ -178,10 +178,10 @@ namespace Payments.BTCPayServer
         {
             // implement process payment
             Order? order = null;
+            var myStore = _workContext.CurrentStore;
             try
             {
 
-                var myStore = _workContext.CurrentStore;
                 var lang = _workContext.WorkingLanguage;
                 var langCode = (lang == null) ? "en" : lang.UniqueSeoCode;
 
@@ -202,7 +202,7 @@ namespace Payments.BTCPayServer
                             _linkGenerator.GetPathByAction("Index", "OrderBTCPayServer",
                                 new { id = paymentTransaction.OrderGuid })).ToString()
                 });
-                
+
                 order = await _orderService.GetOrderByGuid(paymentTransaction.OrderGuid);
                 order.OrderTags.Add($"AuthorizationTransactionResult#{invoice.CheckoutLink}");
                 order.OrderTags.Add($"AuthorizationTransactionId#{invoice.Id}");
@@ -227,6 +227,8 @@ namespace Payments.BTCPayServer
                     CreatedOnUtc = DateTime.UtcNow
                 });
 
+                _httpContextAccessor.HttpContext?.Response.Redirect(myStore.Url + "/badredirect");
+
             }
 
         }
@@ -237,7 +239,8 @@ namespace Payments.BTCPayServer
             try
             {
                 var order = await _orderService.GetOrderByGuid(refundPaymentRequest.PaymentTransaction.OrderGuid);
-                var sUrl = _btcPayService.CreateRefund(_btcPaySettings, refundPaymentRequest);
+                var sUrl = await _btcPayService.CreateRefund(_btcPaySettings, refundPaymentRequest);
+                if (sUrl == null) { throw new Exception("Refund : Error with BTCPay"); }
                 result.NewTransactionStatus = refundPaymentRequest.IsPartialRefund ? TransactionStatus.PartiallyRefunded : TransactionStatus.Refunded;
                 await _orderService.InsertOrderNote(new OrderNote {
                     OrderId = order.Id,
@@ -285,8 +288,8 @@ namespace Payments.BTCPayServer
         {
             try
             {
-                 return new VoidPaymentResult() {
-                     NewTransactionStatus = paymentTransaction.TransactionStatus
+                return new VoidPaymentResult() {
+                    NewTransactionStatus = paymentTransaction.TransactionStatus
                 };
 
             }

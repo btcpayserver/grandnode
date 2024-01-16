@@ -275,7 +275,8 @@ namespace Payments.BTCPayServer.Controllers
             var myStore = _workContext.CurrentStore;
 
             //var adminUrl = new Uri(new Uri(myStore.Url),
-            var adminUrl = new Uri(new Uri((Request.IsHttps ? "https://" : "http://") + Request.Host.Value),
+            //var adminUrl = new Uri(new Uri((Request.IsHttps ? "https://" : "http://") + Request.Host.Value),
+            var adminUrl = new Uri(new Uri("https://" + Request.Host.Value),
                 _linkGenerator.GetPathByAction(HttpContext, "GetAutomaticApiKeyConfig", "BTCPayServer",
                     new { ssid = myStore.Id, btcpayuri = btcpayUri }));
             var uri = BTCPayServerClient.GenerateAuthorizeUri(btcpayUri,

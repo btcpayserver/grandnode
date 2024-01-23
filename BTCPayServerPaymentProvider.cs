@@ -33,7 +33,6 @@ namespace Payments.BTCPayServer
         private readonly LinkGenerator _linkGenerator;
         private readonly BtcPayService _btcPayService;
 
-        private string UrlRedirect;
 
         public BTCPayServerPaymentProvider(
             IHttpContextAccessor httpContextAccessor,
@@ -244,7 +243,7 @@ namespace Payments.BTCPayServer
                 result.NewTransactionStatus = refundPaymentRequest.IsPartialRefund ? TransactionStatus.PartiallyRefunded : TransactionStatus.Refunded;
                 await _orderService.InsertOrderNote(new OrderNote {
                     OrderId = order.Id,
-                    Note = _translationService.GetResource("Plugins.Payments.BTCPayServer.NoteRefund") + sUrl,
+                    Note = _translationService.GetResource("Plugins.Payments.BTCPayServer.NoteRefund") + $" <a href='{sUrl}'>{sUrl}</a>",
                     DisplayToCustomer = true,
                     CreatedOnUtc = DateTime.UtcNow
                 });

@@ -17,7 +17,7 @@ Experience the simplicity of accepting Bitcoin payments with just a few straight
 4. Click "Save" button at the top right to persist the configuration
 5. Congrats, the configuration is now done.
 
-Note: given the architecture of GrandNode, it is possible that malfunctions in redirections may occur. Particularly if https is disabled or incorrectly configured. In this case, please opt for manual configuration.
+- Note: given the architecture of GrandNode, it is possible that malfunctions in redirections may occur. Particularly if https is disabled or incorrectly configured. In this case, please opt for manual configuration.
 
 ## Manual Configuration
 

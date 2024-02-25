@@ -9,7 +9,7 @@ This plugin allows you to easily start accepting Bitcoin payments in your GrandN
 ## Features
 
 - 0% Fees: Enjoy a payment gateway with no fees. Yes, really!
-- No complicated KYC needed, you're your own, self-hosted payment gateway
+- No complicated KYC needed, you're your own self-hosted payment gateway
 - Automated invoice management and refunds
 - Simple and customizable checkout UX, available in 30+ languages
 - Direct payments to your wallet, no intermediary
@@ -74,7 +74,7 @@ BTCPay **Store ID** can be obtained from your BTCPay Server, in Store Settings >
 
 *Note: To use the [refund feature](https://docs.btcpayserver.org/Refund/#refunds), you must also add the "Create non-approved pull payments" permission. After a refund, an order note is created where you can copy the pull payments link and send to your customer to claim it (this order note is also visible by the customer). The customer can request the refund on that page by filling out refund address.*
 
-#### Generateing the webhook
+#### Generating the webhook
 
 1. In your GrandNode, copy the "Webhook Url" shown on the bottom of the BTCPay plugin configuration screen. 
 2. Next, go to your BTCPay Server `Store Settings > Webhooks`

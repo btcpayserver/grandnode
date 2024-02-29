@@ -1,6 +1,6 @@
 # BTCPay Server – Accept Bitcoin payments in GrandNode
 
-![BTCPay GrandNode Banner](GrandNodeAcceptBitcoin.png)
+![BTCPay GrandNode Banner](https://github.com/btcpayserver/grandnode/blob/main/GrandNodeAcceptBitcoin.png?raw=true)
 
 ## Plugin Overview
 

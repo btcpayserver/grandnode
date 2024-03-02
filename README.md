@@ -22,7 +22,7 @@ This plugin allows you to easily start accepting Bitcoin payments in your GrandN
 
 ### Download and installation
 
-The plugins can be downloaded through GrandNode Extension Directory or GitHub. 
+The plugins can be downloaded through through [GitHub](https://github.com/btcpayserver/nopcommerce/releases) or [GrandNode Extension Marketplace](https://grandnode.com/btcpay-server-accept-bitcoin-payments). 
 
 For installing the plugin on GrandNode, you can either upload the plugin directly to the `/plugins` folder in your GrandNode main directory and restart your application, or use the Admin Panel to upload the plugin. 
 

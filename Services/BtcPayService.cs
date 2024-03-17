@@ -1,6 +1,5 @@
 ﻿using BTCPayServer.Client;
 using BTCPayServer.Client.Models;
-using Grand.Business.Checkout.Services.Payments;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Checkout.Payments;
 using Grand.Business.Core.Interfaces.Common.Logging;
@@ -19,11 +18,12 @@ namespace Payments.BTCPayServer.Services
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IOrderService _orderService;
-        private readonly IPaymentTransactionService? _paymentTransactionService;
+        private readonly IPaymentTransactionService _paymentTransactionService;
         private readonly ILogger _logger;
 
-        public BtcPayService(IOrderService orderService,
-            IPaymentTransactionService? paymentTransactionService,
+        public BtcPayService(
+            IOrderService orderService,
+            IPaymentTransactionService paymentTransactionService,
             ILogger logger,
             IHttpClientFactory httpClientFactory)
         {
@@ -268,7 +268,7 @@ namespace Payments.BTCPayServer.Services
 
         public BTCPayServerClient GetClient(BtcPaySettings settings)
         {
-            return new BTCPayServerClient(new Uri(settings.BtcPayUrl), settings.ApiKey,
+            return new BTCPayServerClient(new Uri(settings.BtcPayUrl!), settings.ApiKey,
                 _httpClientFactory.CreateClient("BTCPayServer"));
         }
 

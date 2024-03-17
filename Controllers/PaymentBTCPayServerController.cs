@@ -1,6 +1,5 @@
 ﻿using BTCPayServer.Client.Models;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
-using Grand.Business.Core.Interfaces.Checkout.Payments;
 using Grand.Business.Core.Interfaces.Common.Configuration;
 using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Domain.Logging;
@@ -18,18 +17,17 @@ namespace BTCPayServer.Controllers
         private readonly ISettingService _settingService;
         private readonly IOrderService _orderService;
         private readonly ILogger _logger;
-        private readonly BtcPayService _btcPayService;
+        private readonly Func<BtcPayService> _btcPayService;
 
         public PaymentBTCPayServerController(IOrderService orderService,
             ISettingService settingService,
             ILogger logger,
-            IPaymentTransactionService paymentTransactionService,
-            IHttpClientFactory httpClientFactory)
+            Func<BtcPayService> btcPayService)
         {
             _settingService = settingService;
             _orderService = orderService;
             _logger = logger;
-            _btcPayService = new BtcPayService(orderService, paymentTransactionService, logger, httpClientFactory);
+            _btcPayService = btcPayService;
         }
 
 
@@ -68,8 +66,8 @@ namespace BTCPayServer.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest);
                 }
 
-                var invoice = await _btcPayService.GetInvoice(settings, webhookEvent.InvoiceId);
-                await _btcPayService.UpdateOrderWithInvoice(order, invoice, webhookEvent);
+                var invoice = await _btcPayService().GetInvoice(settings, webhookEvent.InvoiceId);
+                await _btcPayService().UpdateOrderWithInvoice(order, invoice, webhookEvent);
 
                 return StatusCode(StatusCodes.Status200OK);
 

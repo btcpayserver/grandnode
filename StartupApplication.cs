@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Payments.BTCPayServer.Services;
 
 namespace Payments.BTCPayServer
 {
@@ -12,6 +13,11 @@ namespace Payments.BTCPayServer
         public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IPaymentProvider, BTCPayServerPaymentProvider>();
+            services.AddScoped<BtcPayService>();
+            services.AddScoped<Func<BtcPayService>>(serviceProvider =>
+            {
+                return () => serviceProvider.GetRequiredService<BtcPayService>();
+            });
         }
 
         public int Priority => 10;

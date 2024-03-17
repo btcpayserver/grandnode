@@ -10,7 +10,7 @@ namespace Payments.BTCPayServer
         /// <summary>
         /// The url of your BTCPay instance
         /// </summary>
-        public string BtcPayUrl { get; set; }
+        public string? BtcPayUrl { get; set; }
 
         /// <summary>
         /// The API Key value generated in your BTCPay instance

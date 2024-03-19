@@ -7,5 +7,5 @@ using Grand.Infrastructure.Plugins;
     SystemName = "Payments.BTCPayServer",
     SupportedVersion = GrandVersion.SupportedPluginVersion,
     Author = "Nisaba Solutions",
-    Version = GrandVersion.SupportedPluginVersion + ".001"
+    Version = GrandVersion.SupportedPluginVersion + ".002"
 )]

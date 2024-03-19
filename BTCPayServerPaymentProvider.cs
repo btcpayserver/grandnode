@@ -1,5 +1,4 @@
 ﻿using Grand.Business.Core.Enums.Checkout;
-using Grand.Business.Core.Interfaces.Catalog.Products;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Checkout.Payments;
 using Grand.Business.Core.Interfaces.Common.Directory;
@@ -17,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Payments.BTCPayServer.Models;
 using Payments.BTCPayServer.Services;
 
+#nullable enable
+
 namespace Payments.BTCPayServer
 {
     public class BTCPayServerPaymentProvider : IPaymentProvider
@@ -25,38 +26,34 @@ namespace Payments.BTCPayServer
         private readonly BtcPaySettings _btcPaySettings;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IProductService _productService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IWorkContext _workContext;
         private readonly ILogger _logger;
         private readonly IOrderService _orderService;
         private readonly LinkGenerator _linkGenerator;
-        private readonly BtcPayService _btcPayService;
+        private readonly Func<BtcPayService> _btcPayService;
 
 
         public BTCPayServerPaymentProvider(
             IHttpContextAccessor httpContextAccessor,
             ITranslationService translationService,
-            IProductService productService,
             IServiceProvider serviceProvider,
             IWorkContext workContext,
             BtcPaySettings btcPaySettings,
             LinkGenerator linkGenerator,
             IOrderService orderService,
             ILogger logger,
-            IHttpClientFactory httpClientFactory)
+            Func<BtcPayService> btcPayService)
         {
             _httpContextAccessor = httpContextAccessor;
             _translationService = translationService;
-            _productService = productService;
             _serviceProvider = serviceProvider;
             _workContext = workContext;
             _btcPaySettings = btcPaySettings;
             _linkGenerator = linkGenerator;
             _orderService = orderService;
             _logger = logger;
-
-            _btcPayService = new BtcPayService(_orderService, null, logger, httpClientFactory);
+            _btcPayService = btcPayService;
         }
 
         public PaymentMethodType PaymentMethodType => PaymentMethodType.Redirection;
@@ -135,9 +132,9 @@ namespace Payments.BTCPayServer
             }
 
             if (!(result > 0)) return result;
-            var currencyService = _serviceProvider.GetRequiredService<ICurrencyService>();
-            var workContext = _serviceProvider.GetRequiredService<IWorkContext>();
-            result = await currencyService.ConvertFromPrimaryStoreCurrency(result, workContext.WorkingCurrency);
+
+            var currencyService = _serviceProvider.GetRequiredService<ICurrencyService>();            
+            result = await currencyService.ConvertFromPrimaryStoreCurrency(result, _workContext.WorkingCurrency);
 
             return result;
         }
@@ -156,9 +153,11 @@ namespace Payments.BTCPayServer
             return await Task.FromResult(false);
         }
 
-        public async Task<PaymentTransaction> InitPaymentTransaction()
+        public Task<PaymentTransaction> InitPaymentTransaction()
         {
-            return await Task.FromResult<PaymentTransaction>(null);
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+            return Task.FromResult<PaymentTransaction>(null);
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
         }
 
         public async Task<ProcessPaymentResult> ProcessPayment(PaymentTransaction paymentTransaction)
@@ -186,7 +185,7 @@ namespace Payments.BTCPayServer
 
                 Customer? myCustomer = _workContext.CurrentCustomer;
 
-                var invoice = await _btcPayService.CreateInvoice(_btcPaySettings, new PaymentDataModel() {
+                var invoice = await _btcPayService().CreateInvoice(_btcPaySettings, new PaymentDataModel() {
                     CurrencyCode = paymentTransaction.CurrencyCode,
                     Amount = (decimal)paymentTransaction.TransactionAmount,
                     BuyerEmail = myCustomer.Email ?? (myCustomer.BillingAddress.Email ?? myCustomer.ShippingAddress.Email),
@@ -225,9 +224,6 @@ namespace Payments.BTCPayServer
                     DisplayToCustomer = true,
                     CreatedOnUtc = DateTime.UtcNow
                 });
-
-                _httpContextAccessor.HttpContext?.Response.Redirect(myStore.Url + "/badredirect");
-
             }
 
         }
@@ -238,7 +234,7 @@ namespace Payments.BTCPayServer
             try
             {
                 var order = await _orderService.GetOrderByGuid(refundPaymentRequest.PaymentTransaction.OrderGuid);
-                var sUrl = await _btcPayService.CreateRefund(_btcPaySettings, refundPaymentRequest);
+                var sUrl = await _btcPayService().CreateRefund(_btcPaySettings, refundPaymentRequest);
                 if (sUrl == null) { throw new Exception("Refund : Error with BTCPay"); }
                 result.NewTransactionStatus = refundPaymentRequest.IsPartialRefund ? TransactionStatus.PartiallyRefunded : TransactionStatus.Refunded;
                 await _orderService.InsertOrderNote(new OrderNote {
@@ -259,7 +255,9 @@ namespace Payments.BTCPayServer
 
         public async Task<PaymentTransaction> SavePaymentInfo(IDictionary<string, string> model)
         {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
             return await Task.FromResult<PaymentTransaction>(null);
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
         }
 
         public async Task<bool> SkipPaymentInfo()
@@ -301,13 +299,6 @@ namespace Payments.BTCPayServer
 
         public async Task<IList<string>> ValidatePaymentForm(IDictionary<string, string> model)
         {
-            var warnings = new List<string>();
-
-            /*if (form["Agree"] == "false")
-            {
-                var checkAgree = Task.Run(() => _localizationService.GetResourceAsync("Plugins.Payments.SwissBitcoinPay.CheckAgree")).Result;
-                warnings.Add(checkAgree);
-            }*/
             return await Task.FromResult(new List<string>());
         }
 

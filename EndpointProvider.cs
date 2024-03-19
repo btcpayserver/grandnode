@@ -11,7 +11,7 @@ namespace Payments.BTCPayServer
             endpointRouteBuilder.MapControllerRoute("Plugin.PaymentBTCPayServer",
                  "Plugins/PaymentBTCPayServer/PaymentInfo",
                  new { controller = "PaymentBTCPayServer", action = "PaymentInfo", area = "" }
-            );
+            );            
         }
         public int Priority => 0;
 

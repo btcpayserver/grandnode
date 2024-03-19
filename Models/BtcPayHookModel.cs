@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace Payments.BTCPayServer.Models
 {
@@ -10,13 +6,9 @@ namespace Payments.BTCPayServer.Models
     {
         public bool enabled = true;
         public bool automaticRedelivery = true;
-        public string url;
-        public BtcPayHookAuthorizedEvents authorizedEvents = new BtcPayHookAuthorizedEvents();
-        public string secret;
-
-        public BtcPayHookModel()
-        {
-        }
+        public string? url;
+        public BtcPayHookAuthorizedEvents authorizedEvents = new();
+        public string? secret;        
     }
 
     public struct BtcPayHookAuthorizedEvents

@@ -62,7 +62,7 @@
                         <label>@Loc["Plugins.Payments.BTCPayServer.WebHookUrl"]</label>
                     </div>
                     <div class="col-md-9">
-                        <input value="@ViewBag.UrlWebHook" readonly />
+                        <input value="@ViewBag.UrlWebHook" readonly class="form-control k-input text-box single-line col-md-6" />
                         <button class="btn btn-outline-secondary" title="Copy" onclick="navigator.clipboard.writeText('@ViewBag.UrlWebHook')">
                             <i class="fa fa-copy"></i>
                         </button>

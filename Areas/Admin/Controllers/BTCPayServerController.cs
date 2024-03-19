@@ -1,5 +1,4 @@
 ﻿using BTCPayServer.Client;
-using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Common.Configuration;
 using Grand.Business.Core.Interfaces.Common.Localization;
 using Grand.Business.Core.Interfaces.Common.Logging;
@@ -37,23 +36,23 @@ namespace Payments.BTCPayServer.Controllers
         private readonly IPermissionService _permissionService;
         private readonly LinkGenerator _linkGenerator;
         private readonly PaymentSettings _paymentSettings;
-        private readonly BtcPayService _btcPayService;
+        private readonly Func<BtcPayService> _btcPayService;
         private readonly ILogger _logger;
 
         #endregion
 
         #region Ctor
 
-        public BTCPayServerController(IWorkContext workContext,
+        public BTCPayServerController(
+            IWorkContext workContext,
             LinkGenerator linkGenerator,
             IStoreService storeService,
             ISettingService settingService,
             ITranslationService translationService,
             PaymentSettings settings,
-            IOrderService orderService,
             ILogger logger,
             IPermissionService permissionService,
-            IHttpClientFactory httpClientFactory)
+            Func<BtcPayService> btcPayService)
         {
             _linkGenerator = linkGenerator;
             _workContext = workContext;
@@ -63,8 +62,7 @@ namespace Payments.BTCPayServer.Controllers
             _permissionService = permissionService;
             _paymentSettings = settings;
             _logger = logger;
-
-            _btcPayService = new BtcPayService(orderService, null, logger, httpClientFactory);
+            _btcPayService = btcPayService;
 
         }
 
@@ -75,8 +73,8 @@ namespace Payments.BTCPayServer.Controllers
         private async Task<string> GetActiveStore()
         {
             var stores = await _storeService.GetAllStores();
-            if (stores.Count < 2)
-                return stores.FirstOrDefault()?.Id;
+            if (stores.Count == 1)
+                return stores.FirstOrDefault()!.Id;
 
             var storeId = _workContext.CurrentCustomer.GetUserFieldFromEntity<string>(SystemCustomerFieldNames.AdminAreaStoreScopeConfiguration);
             var store = await _storeService.GetStoreById(storeId);
@@ -102,16 +100,15 @@ namespace Payments.BTCPayServer.Controllers
                 AdditionalFeePercentage = btcPaySettings.AdditionalFeePercentage,
                 StoreScope = storeScope
             };
+            var store = await _storeService.GetStoreById(storeScope);
 
-            /*           ViewBag.UrlWebHook = new Uri(new Uri(_storeService.GetStoreById(storeScope).Result.Url),
-                           _linkGenerator.GetPathByAction("Process", "PaymentBTCPayServer"));*/
-            ViewBag.UrlWebHook = new Uri(_storeService.GetStoreById(storeScope).Result.Url + "PaymentBTCPayServer/Process");
+            ViewBag.UrlWebHook = (store.SslEnabled ? store.SecureUrl : store.Url) + "PaymentBTCPayServer/Process";
 
             return View(model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Configure(ConfigurationModel model, string command = null)
+        public async Task<IActionResult> Configure(ConfigurationModel model, string? command = null)
         {
             if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
                 return AccessDeniedView();
@@ -163,16 +160,9 @@ namespace Payments.BTCPayServer.Controllers
                 return await Configure();
             }
 
-            /*if (!ModelState.IsValid)
-            {
-                Error("Incorrect data");
-                return await Configure();
-            }*/
-
-
 
             //save settings
-            settings.BtcPayUrl = model.BtcPayUrl.Trim();
+            settings.BtcPayUrl = model.BtcPayUrl?.Trim();
             settings.ApiKey = model.ApiKey?.Trim();
             settings.BtcPayStoreID = model.BtcPayStoreID?.Trim();
             settings.WebHookSecret = model.WebHookSecret?.Trim();
@@ -196,48 +186,35 @@ namespace Payments.BTCPayServer.Controllers
 
         [HttpPost]
         [IgnoreAntiforgeryToken]
-        public async Task<IActionResult> GetAutomaticApiKeyConfig()
+        public async Task<IActionResult> GetAutomaticApiKeyConfig(BtcPayConfigModel model)
         {
             var myStore = _workContext.CurrentStore;
 
-            Request.Query.TryGetValue("ssid", out var ssidx);
-            var ssid = ssidx.FirstOrDefault(); // ?? myStore.Id;
-            if (ssid != myStore.Id)
+            if (model.Ssid != myStore.Id)
             {
                 await _logger.InsertLog(LogLevel.Error, "GetAutomaticApiKeyConfig(): NotFound");
                 return NotFound();
             }
 
-            //var storeScope = await GetActiveStore();
-            //var settings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
             var settings = _settingService.LoadSetting<BtcPaySettings>(myStore.Id);
 
             try
             {
-                Request.Form.TryGetValue("apiKey", out var apiKey);
-                Request.Form.TryGetValue("permissions[]", out var permissions);
-                Permission.TryParse(permissions.FirstOrDefault(), out var permission);
-                if (Request.Query.TryGetValue("btcpayuri", out var btcpayUris) &&
-                    btcpayUris.FirstOrDefault() is { } stringbtcpayUri)
-                {
-                    settings.BtcPayUrl = stringbtcpayUri;
-                }
+                settings.BtcPayUrl = model.Btcpayuri;
+                settings.ApiKey = model.ApiKey;
+                settings.BtcPayStoreID = model.Scope;
 
-                settings.ApiKey = apiKey;
-                settings.BtcPayStoreID = permission.Scope;
                 try
                 {
-                    if (permission.Scope is null)
+                    if (model.Scope is null)
                     {
-                        settings.BtcPayStoreID = await _btcPayService.GetStoreId(settings);
+                        settings.BtcPayStoreID = await _btcPayService().GetStoreId(settings);
                     }
 
                     if (string.IsNullOrEmpty(settings.WebHookSecret))
                     {
-                        var webhookUrl = new Uri(myStore.Url + "PaymentBTCPayServer/Process");
-                        /*new Uri(new Uri(myStore.Url),
-                            _linkGenerator.GetPathByAction("Process", "PaymentBTCPayServer"));*/
-                        settings.WebHookSecret = await _btcPayService.CreateWebHook(settings, webhookUrl.ToString());
+                        var webhookUrl = (myStore.SslEnabled ? myStore.SecureUrl : myStore.Url) + "PaymentBTCPayServer/Process";
+                        settings.WebHookSecret = await _btcPayService().CreateWebHook(settings, webhookUrl.ToString());
                     }
                 }
                 catch (Exception ex)
@@ -274,11 +251,9 @@ namespace Payments.BTCPayServer.Controllers
 
             var myStore = _workContext.CurrentStore;
 
-            //var adminUrl = new Uri(new Uri(myStore.Url),
-            //var adminUrl = new Uri(new Uri((Request.IsHttps ? "https://" : "http://") + Request.Host.Value),
             var adminUrl = new Uri(new Uri("https://" + Request.Host.Value),
-                _linkGenerator.GetPathByAction(HttpContext, "GetAutomaticApiKeyConfig", "BTCPayServer",
-                    new { ssid = myStore.Id, btcpayuri = btcpayUri }));
+                _linkGenerator.GetPathByAction(HttpContext, "GetAutomaticApiKeyConfig", "PaymentBTCPayConfig",
+                    new { ssid = myStore.Id, btcpayuri = btcpayUri, area = "" }));
             var uri = BTCPayServerClient.GenerateAuthorizeUri(btcpayUri,
                 new[]
                 {

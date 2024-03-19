@@ -1,0 +1,19 @@
+﻿@model Payments.BTCPayServer.Models.BtcPayConfigModel
+@{
+    Layout = "";
+}
+<div style="display:none">
+<form asp-action="GetAutomaticApiKeyConfig" asp-controller="BTCPayServer" asp-area="Admin" id="FormBTCPayConfig">
+    <admin-input asp-for="ApiKey" />
+    <admin-input asp-for="Ssid" />
+    <admin-input asp-for="Btcpayuri" />
+    <admin-input asp-for="Scope" />
+    <button type="submit" name="save" class="btn green">@Loc["Admin.Common.Save"]</button>
+</form>
+</div>
+<script>
+    window.onload = function () {
+        var form = document.getElementById("FormBTCPayConfig");
+        form.submit();
+    };
+</script>

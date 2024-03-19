@@ -11,9 +11,8 @@ namespace Payments.BTCPayServer.Models
         public string? StoreScope { get; set; }
 
         [GrandResourceDisplayName("Plugins.Payments.BTCPayServer.BtcPayUrl")]
-        //[Url]
         [Required]
-        public string BtcPayUrl { get; set; }
+        public string? BtcPayUrl { get; set; }
 
         [GrandResourceDisplayName("Plugins.Payments.BTCPayServer.ApiKey")]
         public string? ApiKey { get; set; }
@@ -22,7 +21,6 @@ namespace Payments.BTCPayServer.Models
         public string? BtcPayStoreID { get; set; }
 
         [GrandResourceDisplayName("Plugins.Payments.BTCPayServer.WebHookSecret")]
-        //[PasswordPropertyText]
         public string? WebHookSecret { get; set; }
 
 

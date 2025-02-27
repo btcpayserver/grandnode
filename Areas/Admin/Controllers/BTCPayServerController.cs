@@ -1,21 +1,19 @@
 ﻿using BTCPayServer.Client;
 using Grand.Business.Core.Interfaces.Common.Configuration;
 using Grand.Business.Core.Interfaces.Common.Localization;
-using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Business.Core.Interfaces.Common.Security;
 using Grand.Business.Core.Interfaces.Common.Stores;
-using Grand.Business.Core.Utilities.Common.Security;
 using Grand.Domain.Common;
 using Grand.Domain.Customers;
-using Grand.Domain.Logging;
 using Grand.Domain.Payments;
+using Grand.Domain.Permissions;
 using Grand.Infrastructure;
 using Grand.Web.Common.Controllers;
 using Grand.Web.Common.Filters;
 using Grand.Web.Common.Security.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using NUglify.Helpers;
+using Microsoft.Extensions.Logging;
 using Payments.BTCPayServer.Models;
 using Payments.BTCPayServer.Services;
 using System.Web;
@@ -37,7 +35,7 @@ namespace Payments.BTCPayServer.Controllers
         private readonly LinkGenerator _linkGenerator;
         private readonly PaymentSettings _paymentSettings;
         private readonly Func<BtcPayService> _btcPayService;
-        private readonly ILogger _logger;
+        private readonly ILogger<BTCPayServerController> _logger;
 
         #endregion
 
@@ -50,7 +48,7 @@ namespace Payments.BTCPayServer.Controllers
             ISettingService settingService,
             ITranslationService translationService,
             PaymentSettings settings,
-            ILogger logger,
+            ILogger<BTCPayServerController> logger,
             IPermissionService permissionService,
             Func<BtcPayService> btcPayService)
         {
@@ -89,13 +87,13 @@ namespace Payments.BTCPayServer.Controllers
 
             //load settings for a chosen store scope
             var storeScope = await GetActiveStore();
-            var btcPaySettings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
+            var btcPaySettings = await _settingService.LoadSetting<BtcPaySettings>(storeScope);
 
             var model = new ConfigurationModel {
-                BtcPayUrl = btcPaySettings.BtcPayUrl.IfNullOrWhiteSpace(""),
-                ApiKey = btcPaySettings.ApiKey.IfNullOrWhiteSpace(""),
-                BtcPayStoreID = btcPaySettings.BtcPayStoreID.IfNullOrWhiteSpace(""),
-                WebHookSecret = btcPaySettings.WebHookSecret.IfNullOrWhiteSpace(""),
+                BtcPayUrl = string.IsNullOrWhiteSpace(btcPaySettings.BtcPayUrl) ? "" : btcPaySettings.BtcPayUrl,
+                ApiKey = string.IsNullOrWhiteSpace(btcPaySettings.ApiKey) ? "" : btcPaySettings.ApiKey,
+                BtcPayStoreID = string.IsNullOrWhiteSpace(btcPaySettings.BtcPayStoreID) ? "" : btcPaySettings.BtcPayStoreID,
+                WebHookSecret = string.IsNullOrWhiteSpace(btcPaySettings.WebHookSecret) ? "" : btcPaySettings.WebHookSecret,
                 AdditionalFee = btcPaySettings.AdditionalFee,
                 AdditionalFeePercentage = btcPaySettings.AdditionalFeePercentage,
                 StoreScope = storeScope
@@ -115,7 +113,7 @@ namespace Payments.BTCPayServer.Controllers
 
             //load settings for a chosen store scope
             var storeScope = await GetActiveStore();
-            var settings = _settingService.LoadSetting<BtcPaySettings>(storeScope);
+            var settings = await _settingService.LoadSetting<BtcPaySettings>(storeScope);
 
 
             if (command == "delete")
@@ -192,11 +190,11 @@ namespace Payments.BTCPayServer.Controllers
 
             if (model.Ssid != myStore.Id)
             {
-                await _logger.InsertLog(LogLevel.Error, "GetAutomaticApiKeyConfig(): NotFound");
+                _logger.LogError("GetAutomaticApiKeyConfig(): NotFound");
                 return NotFound();
             }
 
-            var settings = _settingService.LoadSetting<BtcPaySettings>(myStore.Id);
+            var settings = await _settingService.LoadSetting<BtcPaySettings>(myStore.Id);
 
             try
             {
@@ -219,7 +217,7 @@ namespace Payments.BTCPayServer.Controllers
                 }
                 catch (Exception ex)
                 {
-                    await _logger.InsertLog(LogLevel.Error, "1- " + ex.Message);
+                    _logger.LogError("1- " + ex.Message);
                 }
 
                 _paymentSettings.ActivePaymentProviderSystemNames.Add("Payments.BTCPayServer");
@@ -234,7 +232,7 @@ namespace Payments.BTCPayServer.Controllers
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, "2- " + ex.Message);
+                _logger.LogError("2- " + ex.Message);
 
             }
             return RedirectToAction(nameof(Configure));
@@ -260,7 +258,7 @@ namespace Payments.BTCPayServer.Controllers
                     Policies.CanCreateInvoice, // create invoices for payment
                     Policies.CanViewInvoices, // fetch created invoices to check status
                     Policies.CanModifyInvoices, // able to mark an invoice invalid in case merchant wants to void the order
-                    Policies.CanModifyStoreWebhooks, // able to create the webhook required automatically
+                    Policies.CanModifyWebhooks, // able to create the webhook required automatically
                     Policies.CanViewStoreSettings, // able to fetch rates
                     Policies.CanCreateNonApprovedPullPayments // able to create refunds
                 },

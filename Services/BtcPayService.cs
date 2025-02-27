@@ -2,13 +2,13 @@
 using BTCPayServer.Client.Models;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Checkout.Payments;
-using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Business.Core.Utilities.Checkout;
-using Grand.Domain.Logging;
 using Grand.Domain.Orders;
 using Grand.Domain.Payments;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Payments.BTCPayServer.Models;
+using System.Net.Http;
 using System.Security.Cryptography;
 
 namespace Payments.BTCPayServer.Services
@@ -19,12 +19,12 @@ namespace Payments.BTCPayServer.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IOrderService _orderService;
         private readonly IPaymentTransactionService _paymentTransactionService;
-        private readonly ILogger _logger;
+        private readonly ILogger<BtcPayService> _logger;
 
         public BtcPayService(
             IOrderService orderService,
             IPaymentTransactionService paymentTransactionService,
-            ILogger logger,
+            ILogger<BtcPayService> logger,
             IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
@@ -53,8 +53,7 @@ namespace Payments.BTCPayServer.Services
                 Checkout = new InvoiceDataBase.CheckoutOptions() {
                     DefaultLanguage = paymentData.Lang,
                     RedirectURL = paymentData.RedirectionURL,
-                    RedirectAutomatically = true,
-                    RequiresRefundEmail = false
+                    RedirectAutomatically = true
                 },
                 Metadata = JObject.FromObject(new
                 {
@@ -77,10 +76,10 @@ namespace Payments.BTCPayServer.Services
             var client = GetClient(settings);
             var invoice = await client.GetInvoicePaymentMethods(settings.BtcPayStoreID,
                 refundRequest.PaymentTransaction.AuthorizationTransactionId);
-            var pm = (invoice.FirstOrDefault(p => p.Payments.Any()) ?? invoice.First()).PaymentMethod;
+            var pm = (invoice.FirstOrDefault(p => p.Payments.Any()) ?? invoice.First()).PaymentMethodId;
             var refundInvoiceRequest = new RefundInvoiceRequest() {
                 Name = "Refund order " + refundRequest.PaymentTransaction.OrderGuid,
-                PaymentMethod = pm,
+                PayoutMethodId = pm,
             };
             if (refundRequest.IsPartialRefund)
             {
@@ -92,7 +91,7 @@ namespace Payments.BTCPayServer.Services
             else
             {
                 refundInvoiceRequest.Description = "Full";
-                refundInvoiceRequest.PaymentMethod = "BTC";
+                refundInvoiceRequest.PayoutMethodId = "BTC";
                 refundInvoiceRequest.RefundVariant = RefundVariant.Fiat;
             }
 
@@ -187,7 +186,7 @@ namespace Payments.BTCPayServer.Services
                 }
                 catch (Exception ex)
                 {
-                    await _logger.InsertLog(LogLevel.Error, "UpdateOrderWithInvoice() - paymentTransaction: " + ex.Message);
+                    _logger.LogError("UpdateOrderWithInvoice() - paymentTransaction: " + ex.Message);
                 }
             }
 
@@ -285,11 +284,11 @@ namespace Payments.BTCPayServer.Services
                 case WebhookEventType.InvoiceReceivedPayment
                     when webhookEvent.ReadAs<WebhookInvoiceReceivedPaymentEvent>() is { } receivedPaymentEvent:
                     return
-                        $"Payment detected ({receivedPaymentEvent.PaymentMethod}: {receivedPaymentEvent.Payment.Value})";
+                        $"Payment detected ({receivedPaymentEvent.PaymentMethodId}: {receivedPaymentEvent.Payment.Value})";
                 case WebhookEventType.InvoicePaymentSettled
                     when webhookEvent.ReadAs<WebhookInvoicePaymentSettledEvent>() is { } receivedPaymentEvent:
                     return
-                        $"Payment settled ({receivedPaymentEvent.PaymentMethod}: {receivedPaymentEvent.Payment.Value})";
+                        $"Payment settled ({receivedPaymentEvent.PaymentMethodId}: {receivedPaymentEvent.Payment.Value})";
                 case WebhookEventType.InvoiceProcessing
                     when webhookEvent.ReadAs<WebhookInvoiceProcessingEvent>() is { } receivedPaymentEvent &&
                          receivedPaymentEvent.OverPaid:

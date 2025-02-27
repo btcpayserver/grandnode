@@ -3,13 +3,12 @@ using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Checkout.Payments;
 using Grand.Business.Core.Interfaces.Common.Directory;
 using Grand.Business.Core.Interfaces.Common.Localization;
-using Grand.Business.Core.Interfaces.Common.Logging;
 using Grand.Business.Core.Utilities.Checkout;
 using Grand.Domain.Customers;
-using Grand.Domain.Logging;
 using Grand.Domain.Orders;
 using Grand.Domain.Payments;
 using Grand.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +27,7 @@ namespace Payments.BTCPayServer
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IServiceProvider _serviceProvider;
         private readonly IWorkContext _workContext;
-        private readonly ILogger _logger;
+        private readonly ILogger <BTCPayServerPaymentProvider> _logger;
         private readonly IOrderService _orderService;
         private readonly LinkGenerator _linkGenerator;
         private readonly Func<BtcPayService> _btcPayService;
@@ -42,7 +41,7 @@ namespace Payments.BTCPayServer
             BtcPaySettings btcPaySettings,
             LinkGenerator linkGenerator,
             IOrderService orderService,
-            ILogger logger,
+            ILogger<BTCPayServerPaymentProvider> logger,
             Func<BtcPayService> btcPayService)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -172,7 +171,7 @@ namespace Payments.BTCPayServer
             return Task.CompletedTask;
         }
 
-        public async Task PostRedirectPayment(PaymentTransaction paymentTransaction)
+        public async Task<string> PostRedirectPayment(PaymentTransaction paymentTransaction)
         {
             // implement process payment
             Order? order = null;
@@ -208,12 +207,13 @@ namespace Payments.BTCPayServer
 
                 await _orderService.UpdateOrder(order);
 
-                _httpContextAccessor.HttpContext?.Response.Redirect(invoice.CheckoutLink);
+                // _httpContextAccessor.HttpContext?.Response.Redirect(invoice.CheckoutLink);
+                return invoice.CheckoutLink;
 
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, ex.Message);
+                _logger.LogError(ex.Message);
                 if (order == null)
                 {
                     order = await _orderService.GetOrderByGuid(paymentTransaction.OrderGuid);
@@ -224,6 +224,7 @@ namespace Payments.BTCPayServer
                     DisplayToCustomer = true,
                     CreatedOnUtc = DateTime.UtcNow
                 });
+                return string.Empty;
             }
 
         }
@@ -246,7 +247,7 @@ namespace Payments.BTCPayServer
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, ex.Message);
+                _logger.LogError(ex.Message);
                 result.AddError(ex.Message);
             }
 
@@ -292,7 +293,7 @@ namespace Payments.BTCPayServer
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, ex.Message);
+                _logger.LogError(ex.Message);
                 return new VoidPaymentResult() { NewTransactionStatus = TransactionStatus.Voided };
             }
         }

@@ -1,11 +1,10 @@
 ﻿using BTCPayServer.Client.Models;
 using Grand.Business.Core.Interfaces.Checkout.Orders;
 using Grand.Business.Core.Interfaces.Common.Configuration;
-using Grand.Business.Core.Interfaces.Common.Logging;
-using Grand.Domain.Logging;
 using Grand.Web.Common.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Payments.BTCPayServer;
 using Payments.BTCPayServer.Services;
@@ -46,23 +45,23 @@ namespace BTCPayServer.Controllers
 
                 if (webhookEvent?.InvoiceId is null || webhookEvent.Metadata?.TryGetValue("orderId", out var orderIdToken) is not true || orderIdToken.ToString() is not { } orderId)
                 {
-                    await _logger.InsertLog(LogLevel.Error, "Missing fields in request");
+                    _logger.LogError("Missing fields in request");
                     return StatusCode(StatusCodes.Status422UnprocessableEntity);
                 }
 
                 var order = await _orderService.GetOrderByGuid(new Guid(orderId));
                 if (order == null)
                 {
-                    await _logger.InsertLog(LogLevel.Error, "Order not found");
+                    _logger.LogError("Order not found");
                     return StatusCode(StatusCodes.Status422UnprocessableEntity);
                 }
 
 
-                var settings = _settingService.LoadSetting<BtcPaySettings>(order.StoreId);
+                var settings = await _settingService.LoadSetting<BtcPaySettings>(order.StoreId);
 
                 if (settings.WebHookSecret is not null && !BtcPayService.CheckSecretKey(settings.WebHookSecret, jsonStr, BtcPaySecret))
                 {
-                    await _logger.InsertLog(LogLevel.Error, "Bad secret key");
+                    _logger.LogError("Bad secret key");
                     return StatusCode(StatusCodes.Status400BadRequest);
                 }
 
@@ -74,7 +73,7 @@ namespace BTCPayServer.Controllers
             }
             catch (Exception ex)
             {
-                await _logger.InsertLog(LogLevel.Error, ex.Message);
+                _logger.LogError(ex.Message);
                 return StatusCode(StatusCodes.Status400BadRequest);
             }
         }

@@ -2,9 +2,7 @@
 	<Import Project="..\..\Build\Grand.Common.props" />
 	<PropertyGroup>
 		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-		<TargetFramework>net6.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
+		<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -14,14 +12,12 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<OutputPath>..\..\Web\Grand.Web\Plugins\Payments.BTCPayServer\</OutputPath>
-		<OutDir>
-			$(OutputPath)
-		</OutDir>
+		<OutDir>$(OutputPath)</OutDir>
 	</PropertyGroup>
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<RemoveDir Directories="..\..\Web\Grand.Web\Plugins\Payments.BTCPayServer\refs" />
-		<RemoveDir Directories="..\..\Web\Grand.Web\Plugins\Payments.BTCPayServer\ref" />
-	</Target>
+
+	<ItemGroup>
+	  <PackageReference Include="BTCPayServer.Client" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Business\Grand.Business.Core\Grand.Business.Core.csproj">
@@ -42,17 +38,6 @@
 	</ItemGroup>
 
 
-	<ItemGroup>
-	  <PackageReference Include="BTCPayServer.Client" Version="1.7.3" />
-	  <PackageReference Include="NBitcoin" Version="7.0.24" />
-	</ItemGroup>
-	<Target Name="CopyFile" AfterTargets="AfterBuild">
-		<ItemGroup>
-			<CopyFiles Include="$(NuGetPackageRoot)\btcpayserver.client\1.7.3\lib\netstandard2.1\*.dll" />
-			<CopyFiles Include="$(NuGetPackageRoot)\nbitcoin\7.0.24\lib\netstandard2.1\*.dll" />
-		</ItemGroup>
-		<Copy SourceFiles="@(CopyFiles)" DestinationFolder="..\..\Web\Grand.Web\Plugins\Payments.BTCPayServer\" />
-	</Target>
 	<ItemGroup>
 		<None Update="logo.jpg">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

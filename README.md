@@ -53,7 +53,7 @@ Ensure that the following fields are filled out:
 
 #### BTCPay URL
 
-In the BTCPay URL field of your GrandNode, simply input the link to your self-hosted server or the one hosted by a [third-party provider](https://directory.btcpayserver.org/filter/hosts). For example; https://mainnet.demo.btcpayserver.org
+In the BTCPay URL field of your GrandNode, simply input the link to your self-hosted server or the one hosted by a [third-party provider](https://docs.btcpayserver.org/Deployment/ThirdPartyHosting/). For example; https://mainnet.demo.btcpayserver.org
 
 #### BTCPay Store ID
 
